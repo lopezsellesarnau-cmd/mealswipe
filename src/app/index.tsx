@@ -1,98 +1,121 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
+import { GradientButton } from '@/components/gradient-button';
+import { RecipeGrid } from '@/components/recipe-grid';
+import { ScreenBackground } from '@/components/screen-background';
+import { SwipeCard } from '@/components/swipe-card';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { RECIPES } from '@/constants/recipes';
+import { BottomTabInset, Spacing, WideContentWidth } from '@/constants/theme';
+import { useMealPlan } from '@/state/meal-plan';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+export default function SwipeScreen() {
+  return Platform.OS === 'web' ? <WebBrowse /> : <MobileSwipe />;
+}
+
+/**
+ * Web: rejilla — se ve todo de golpe y el corazón marca/desmarca. El gesto de
+ * arrastrar no es nativo del ratón/teclado (y en las pruebas de esta sesión
+ * un "drag" de un solo salto ni siquiera disparaba el gesture-handler), así
+ * que en vez de forzar el mismo mecanismo táctil, la web usa el patrón que
+ * de verdad se espera en un sitio: una rejilla de tarjetas.
+ */
+function WebBrowse() {
+  const router = useRouter();
+  const { liked, toggleLike } = useMealPlan();
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <ScreenBackground style={styles.container}>
+      <SafeAreaView style={[styles.safe, styles.safeWide]} edges={['top']}>
+        <ScrollView contentContainerStyle={styles.webScroll}>
+          <View style={styles.webHeaderRow}>
+            <View>
+              <ThemedText type="subtitle">MealSwipe</ThemedText>
+              <ThemedText themeColor="textSecondary">Tap the heart on what you fancy this week.</ThemedText>
+            </View>
+            {liked.length > 0 && (
+              <GradientButton label={`Build plan (${liked.length}) →`} onPress={() => router.push('/plan')} />
+            )}
+          </View>
+
+          <RecipeGrid recipes={RECIPES} liked={liked} onToggle={toggleLike} />
+        </ScrollView>
+      </SafeAreaView>
+    </ScreenBackground>
   );
 }
 
-export default function HomeScreen() {
+/** Móvil: el swipe de una en una — el gesto táctil de verdad tiene sentido
+ *  aquí, y ya está probado en el simulador con gestos reales. Sin cambios. */
+function MobileSwipe() {
+  const router = useRouter();
+  const { liked, toggleLike } = useMealPlan();
+  const [index, setIndex] = useState(0);
+
+  const current = RECIPES[index];
+  const done = index >= RECIPES.length;
+
+  function next() {
+    setIndex((i) => i + 1);
+  }
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <ScreenBackground style={styles.container}>
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.header}>
+          <ThemedText type="subtitle">MealSwipe</ThemedText>
+          <ThemedText themeColor="textSecondary">Swipe recipes you like — then build your weekly plan.</ThemedText>
+        </View>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
+        <View style={styles.deck}>
+          {done ? (
+            <View style={styles.emptyState}>
+              <ThemedText type="title" style={{ fontSize: 40 }}>
+                🎉
+              </ThemedText>
+              <ThemedText type="smallBold" style={{ textAlign: 'center', marginTop: Spacing.three }}>
+                {liked.length} recipes liked
+              </ThemedText>
+              <GradientButton label="Build my weekly plan →" onPress={() => router.push('/plan')} style={styles.cta} />
+            </View>
+          ) : (
+            <SwipeCard
+              key={current.id}
+              recipe={current}
+              onSwipeLeft={next}
+              onSwipeRight={() => {
+                toggleLike(current);
+                next();
+              }}
+            />
+          )}
+          {!done && (
+            <ThemedText themeColor="textSecondary" style={{ textAlign: 'center', marginTop: Spacing.three }}>
+              {liked.length} liked · {RECIPES.length - index} left
+            </ThemedText>
+          )}
+        </View>
       </SafeAreaView>
-    </ThemedView>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1 },
+  safe: { flex: 1, gap: Spacing.three, alignSelf: 'center', width: '100%' },
+  safeWide: { maxWidth: WideContentWidth },
+  header: { paddingHorizontal: Spacing.four, gap: Spacing.one },
+  webScroll: { padding: Spacing.four, gap: Spacing.four },
+  webHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: Spacing.three },
+  deck: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+    justifyContent: 'flex-start',
+    paddingBottom: BottomTabInset + Spacing.four,
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  emptyState: { alignItems: 'center', paddingHorizontal: Spacing.four, marginTop: Spacing.six },
+  cta: { marginTop: Spacing.four },
 });

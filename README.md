@@ -1,56 +1,48 @@
-# Welcome to your Expo app 👋
+# MealSwipe
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A weekend prototype — Tinder-style recipe swiping that builds a personalized
+weekly meal plan + shopping list. Built to explore the same product space as
+[Mealia](https://www.mealia.co.uk/) (AI grocery assistant), with an agentic
+twist: an LLM layer reasons over the user's liked recipes and household
+constraints (budget, servings, diet) instead of just picking randomly.
 
-## Get started
+## Architecture
 
-1. Install dependencies
+Two pieces, same two-layer pattern I use across my other projects (rules/data
+first, LLM reasons on top of it — never the other way round):
 
-   ```bash
-   npm install
-   ```
+- **`src/`** — Expo (React Native) app. Swipe screen → household form → plan
+  screen. State is a lightweight React Context (`src/state/meal-plan.tsx`), no
+  backend needed for the swiping itself — recipes are a static local dataset
+  (`src/constants/recipes.ts`).
+- **`server/`** — a tiny Express server with one endpoint,
+  `POST /generate-plan`. It takes the liked recipes + household prefs and
+  returns a 7-day plan + consolidated shopping list. With `ANTHROPIC_API_KEY`
+  set, Claude reasons over the constraints; without it, it falls back to a
+  deterministic rotation — the app never breaks just because the key is
+  missing.
 
-2. Start the app
+The Claude key lives only on the server, never in the app bundle.
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Run it
 
 ```bash
-npm run reset-project
+# app
+npm install
+npx expo start --ios   # or --android / --web
+
+# server (separate terminal)
+cd server
+npm install
+cp .env.example .env   # optionally add ANTHROPIC_API_KEY
+npm run dev
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+The app expects the server at `http://localhost:4001` by default — override
+with `EXPO_PUBLIC_API_URL` if testing on a physical device (use your LAN IP,
+not `localhost`).
 
-### Other setup steps
+## Stack
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+React Native (Expo), TypeScript, `react-native-gesture-handler` +
+`react-native-reanimated` for the swipe mechanic, Node/Express, Claude API.

@@ -1,0 +1,13 @@
+{
+  "name": "mealswipe-server",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env index.js",
+    "dev": "node --env-file-if-exists=.env --watch index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  }
+}
