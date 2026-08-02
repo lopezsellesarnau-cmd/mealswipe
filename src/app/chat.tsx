@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Keyboard, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GradientButton } from '@/components/gradient-button';
 import { ScreenBackground } from '@/components/screen-background';
@@ -21,7 +21,6 @@ const STARTER: Message = {
 
 export default function ChatScreen() {
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
   const { liked } = useMealPlan();
   const [messages, setMessages] = useState<Message[]>([STARTER]);
   const [input, setInput] = useState('');
@@ -42,10 +41,12 @@ export default function ChatScreen() {
   }, []);
 
   // Cuando el teclado está abierto, subimos el input justo lo que ocupa el
-  // teclado (menos el inset ya reservado por la safe area). Cuando está
-  // cerrado, lo dejamos por encima de la barra de pestañas. Así nunca se
-  // solapan, sea cual sea la altura real del teclado o de la tab bar.
-  const bottomOffset = keyboardHeight > 0 ? keyboardHeight - insets.bottom : BottomTabInset;
+  // teclado — el SafeAreaView solo reserva el borde superior (edges=['top']),
+  // así que no hay que restar ningún inset, o el input queda metido dentro
+  // del teclado. Cuando está cerrado, lo dejamos por encima de la barra de
+  // pestañas. Así nunca se solapan, sea cual sea la altura real del teclado
+  // o de la tab bar.
+  const bottomOffset = keyboardHeight > 0 ? keyboardHeight : BottomTabInset;
 
   async function send() {
     const text = input.trim();
