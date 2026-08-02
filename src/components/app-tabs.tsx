@@ -22,6 +22,11 @@ export default function AppTabs() {
         <Label>Plan</Label>
         <Icon sf={{ default: 'list.bullet', selected: 'list.bullet.rectangle.fill' }} />
       </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="chat">
+        <Label>Ask</Label>
+        <Icon sf={{ default: 'bubble.left', selected: 'bubble.left.fill' }} />
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }

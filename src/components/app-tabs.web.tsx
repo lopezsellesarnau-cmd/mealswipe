@@ -31,6 +31,9 @@ export default function AppTabs() {
           <TabTrigger name="plan" href="/plan" asChild>
             <TabButton>Plan</TabButton>
           </TabTrigger>
+          <TabTrigger name="chat" href="/chat" asChild>
+            <TabButton>Ask</TabButton>
+          </TabTrigger>
         </CustomTabList>
       </TabList>
       <TabSlot style={styles.slot} />

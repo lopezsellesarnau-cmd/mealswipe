@@ -124,12 +124,56 @@ app.post('/generate-plan', async (req, res) => {
       plan = await planConLLM(liked, hh)
     } catch (err) {
       // No se rompe la demo: si el LLM falla, plan determinista de respaldo.
+      console.error('planConLLM falló, usando fallback determinista:', err.message)
       plan = planDeterminista(liked, hh)
     }
   }
 
   plan.budgetTip = computeBudgetTip(plan, liked, hh)
   res.json(plan)
+})
+
+/**
+ * Chat de IA — lo que Mealia sí tiene y nosotros no teníamos: pedir
+ * sustituciones, ideas rápidas o consejo de cocina en lenguaje natural.
+ * Usa las recetas que le gustaron al usuario como contexto para que las
+ * respuestas sean relevantes a su plan, no genéricas.
+ */
+app.post('/chat', async (req, res) => {
+  const { messages, liked } = req.body || {}
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ error: 'messages debe ser un array con al menos un mensaje.' })
+  }
+  if (!ANTHROPIC_KEY) {
+    return res.status(503).json({ error: 'No hay ANTHROPIC_API_KEY configurada en el servidor.' })
+  }
+
+  const likedTxt = (liked || []).map((r) => r.title).join(', ') || 'none yet'
+  const system = `You are MealSwipe's cooking assistant. Help with ingredient substitutions, quick recipe ideas, and cooking tips. Be concise — 2-4 sentences unless asked for a full recipe. Plain text only, no markdown formatting (no asterisks, no bullet points). The user's currently liked recipes are: ${likedTxt}.`
+
+  try {
+    const apiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: ANTHROPIC_MODEL,
+        max_tokens: 500,
+        system,
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      }),
+    })
+    if (!apiRes.ok) throw new Error(`Anthropic (${apiRes.status}): ${(await apiRes.text()).slice(0, 200)}`)
+    const data = await apiRes.json()
+    const reply = data.content?.[0]?.text || "Sorry, I couldn't come up with anything."
+    res.json({ reply })
+  } catch (err) {
+    console.error('chat falló:', err.message)
+    res.status(502).json({ error: 'Could not reach the assistant right now.' })
+  }
 })
 
 app.get('/health', (_req, res) => res.json({ ok: true }))
