@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Keyboard, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GradientButton } from '@/components/gradient-button';
@@ -26,27 +26,6 @@ export default function ChatScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSub = Keyboard.addListener(showEvent, (e) => setKeyboardHeight(e.endCoordinates.height));
-    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
-  // Cuando el teclado está abierto, subimos el input justo lo que ocupa el
-  // teclado — el SafeAreaView solo reserva el borde superior (edges=['top']),
-  // así que no hay que restar ningún inset, o el input queda metido dentro
-  // del teclado. Cuando está cerrado, lo dejamos por encima de la barra de
-  // pestañas. Así nunca se solapan, sea cual sea la altura real del teclado
-  // o de la tab bar.
-  const bottomOffset = keyboardHeight > 0 ? keyboardHeight : BottomTabInset;
 
   async function send() {
     const text = input.trim();
@@ -75,43 +54,48 @@ export default function ChatScreen() {
   return (
     <ScreenBackground style={styles.container}>
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <ThemedText type="subtitle" style={styles.title}>
-          Ask MealSwipe
-        </ThemedText>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.select({ ios: 'padding', default: undefined })}
+          keyboardVerticalOffset={0}>
+          <ThemedText type="subtitle" style={styles.title}>
+            Ask MealSwipe
+          </ThemedText>
 
-        <ScrollView contentContainerStyle={styles.scroll}>
-          {messages.map((m, i) => (
-            <View
-              key={i}
-              style={[
-                styles.bubble,
-                m.role === 'user'
-                  ? { backgroundColor: theme.primary, alignSelf: 'flex-end' }
-                  : { backgroundColor: theme.backgroundElement, alignSelf: 'flex-start' },
-              ]}>
-              <ThemedText style={m.role === 'user' ? { color: '#fff' } : undefined}>{m.content}</ThemedText>
-            </View>
-          ))}
-          {loading && (
-            <View style={[styles.bubble, { backgroundColor: theme.backgroundElement, alignSelf: 'flex-start' }]}>
-              <ThemedText themeColor="textSecondary">Thinking…</ThemedText>
-            </View>
-          )}
-          {error && <ThemedText style={{ color: theme.danger }}>{error}</ThemedText>}
-        </ScrollView>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll}>
+            {messages.map((m, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.bubble,
+                  m.role === 'user'
+                    ? { backgroundColor: theme.primary, alignSelf: 'flex-end' }
+                    : { backgroundColor: theme.backgroundElement, alignSelf: 'flex-start' },
+                ]}>
+                <ThemedText style={m.role === 'user' ? { color: '#fff' } : undefined}>{m.content}</ThemedText>
+              </View>
+            ))}
+            {loading && (
+              <View style={[styles.bubble, { backgroundColor: theme.backgroundElement, alignSelf: 'flex-start' }]}>
+                <ThemedText themeColor="textSecondary">Thinking…</ThemedText>
+              </View>
+            )}
+            {error && <ThemedText style={{ color: theme.danger }}>{error}</ThemedText>}
+          </ScrollView>
 
-        <ThemedView type="backgroundElement" style={[styles.inputRow, { marginBottom: bottomOffset + Spacing.three }]}>
-          <TextInput
-            value={input}
-            onChangeText={setInput}
-            placeholder="e.g. what can I swap for coconut milk?"
-            placeholderTextColor={theme.textSecondary}
-            style={[styles.input, { color: theme.text }]}
-            onSubmitEditing={send}
-            returnKeyType="send"
-          />
-          <GradientButton label={loading ? '…' : 'Send'} onPress={send} disabled={loading || !input.trim()} />
-        </ThemedView>
+          <ThemedView type="backgroundElement" style={styles.inputRow}>
+            <TextInput
+              value={input}
+              onChangeText={setInput}
+              placeholder="e.g. what can I swap for coconut milk?"
+              placeholderTextColor={theme.textSecondary}
+              style={[styles.input, { color: theme.text }]}
+              onSubmitEditing={send}
+              returnKeyType="send"
+            />
+            <GradientButton label={loading ? '…' : 'Send'} onPress={send} disabled={loading || !input.trim()} />
+          </ThemedView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </ScreenBackground>
   );
@@ -129,6 +113,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.three,
     marginHorizontal: Spacing.four,
+    marginBottom: BottomTabInset + Spacing.three,
     borderRadius: Spacing.five,
   },
   input: { flex: 1, fontSize: 15 },
