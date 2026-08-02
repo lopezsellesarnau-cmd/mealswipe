@@ -8,8 +8,8 @@ import { ScreenBackground } from '@/components/screen-background';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Recipe } from '@/constants/recipes';
-import { BottomTabInset, Spacing, WideContentWidth } from '@/constants/theme';
-import { useIsWide } from '@/hooks/use-responsive';
+import { Spacing, WideContentWidth } from '@/constants/theme';
+import { useIsWide, useTabBarClearance } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme';
 import { useMealPlan } from '@/state/meal-plan';
 
@@ -18,6 +18,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4001';
 export default function PlanScreen() {
   const theme = useTheme();
   const isWide = useIsWide();
+  const tabBarClearance = useTabBarClearance();
   const { liked, household, setHousehold, plan, setPlan } = useMealPlan();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -158,7 +159,7 @@ export default function PlanScreen() {
   return (
     <ScreenBackground style={styles.container}>
       <SafeAreaView style={[styles.safe, isWide && styles.safeWide]} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: tabBarClearance + Spacing.three }]}>
           <ThemedText type="subtitle">Your weekly plan</ThemedText>
 
           {isWide ? (
@@ -221,7 +222,6 @@ const styles = StyleSheet.create({
   scroll: {
     paddingHorizontal: Spacing.four,
     paddingTop: Platform.select({ web: Spacing.six, default: Spacing.three }),
-    paddingBottom: BottomTabInset + Spacing.three,
     gap: Spacing.three,
   },
   columns: { flexDirection: 'row', gap: Spacing.four, alignItems: 'flex-start' },

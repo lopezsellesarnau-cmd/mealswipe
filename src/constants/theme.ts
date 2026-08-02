@@ -89,7 +89,6 @@ export const Spacing = {
   six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
 /** Ancho de contenido en escritorio/web ancho — la web no debe quedarse con
  *  la misma columna estrecha de móvil rodeada de blanco. */

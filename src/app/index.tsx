@@ -9,7 +9,8 @@ import { ScreenBackground } from '@/components/screen-background';
 import { SwipeCard } from '@/components/swipe-card';
 import { ThemedText } from '@/components/themed-text';
 import { RECIPES } from '@/constants/recipes';
-import { BottomTabInset, Spacing, WideContentWidth } from '@/constants/theme';
+import { Spacing, WideContentWidth } from '@/constants/theme';
+import { useTabBarClearance } from '@/hooks/use-responsive';
 import { useMealPlan } from '@/state/meal-plan';
 
 export default function SwipeScreen() {
@@ -54,6 +55,7 @@ function MobileSwipe() {
   const router = useRouter();
   const { liked, toggleLike } = useMealPlan();
   const [index, setIndex] = useState(0);
+  const tabBarClearance = useTabBarClearance();
 
   const current = RECIPES[index];
   const done = index >= RECIPES.length;
@@ -70,7 +72,7 @@ function MobileSwipe() {
           <ThemedText themeColor="textSecondary">Swipe recipes you like — then build your weekly plan.</ThemedText>
         </View>
 
-        <View style={styles.deck}>
+        <View style={[styles.deck, { paddingBottom: tabBarClearance + Spacing.four }]}>
           {done ? (
             <View style={styles.emptyState}>
               <ThemedText type="title" style={{ fontSize: 40 }}>
@@ -114,7 +116,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingBottom: BottomTabInset + Spacing.four,
   },
   emptyState: { alignItems: 'center', paddingHorizontal: Spacing.four, marginTop: Spacing.six },
   cta: { marginTop: Spacing.four },

@@ -6,7 +6,8 @@ import { GradientButton } from '@/components/gradient-button';
 import { ScreenBackground } from '@/components/screen-background';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, Spacing, WideContentWidth } from '@/constants/theme';
+import { Spacing, WideContentWidth } from '@/constants/theme';
+import { useTabBarClearance } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme';
 import { useMealPlan } from '@/state/meal-plan';
 
@@ -21,6 +22,7 @@ const STARTER: Message = {
 
 export default function ChatScreen() {
   const theme = useTheme();
+  const tabBarClearance = useTabBarClearance();
   const { liked } = useMealPlan();
   const [messages, setMessages] = useState<Message[]>([STARTER]);
   const [input, setInput] = useState('');
@@ -83,7 +85,9 @@ export default function ChatScreen() {
             {error && <ThemedText style={{ color: theme.danger }}>{error}</ThemedText>}
           </ScrollView>
 
-          <ThemedView type="backgroundElement" style={styles.inputRow}>
+          <ThemedView
+            type="backgroundElement"
+            style={[styles.inputRow, { marginBottom: tabBarClearance + Spacing.three }]}>
             <TextInput
               value={input}
               onChangeText={setInput}
@@ -113,7 +117,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.three,
     marginHorizontal: Spacing.four,
-    marginBottom: BottomTabInset + Spacing.three,
     borderRadius: Spacing.five,
   },
   input: { flex: 1, fontSize: 15 },
